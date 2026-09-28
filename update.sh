@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+
+git add .
+git commit -m "Update site: $(date '+%Y-%m-%d %H:%M:%S')"
+git push origin main

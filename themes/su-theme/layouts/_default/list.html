@@ -14,9 +14,9 @@
     </div>
   {{ end }}
 
-  <ul class="post-rows">
+  <ul class="post-list">
     {{ range .Paginator.Pages }}
-      {{ partial "post_row.html" (dict "page" . "showSub" true) }}
+      {{ partial "catalog-item.html" . }}
     {{ end }}
   </ul>
 

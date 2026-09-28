@@ -26,20 +26,21 @@
     {{ end }}
     {{ if ne .Type "page" }}
       <p class="article__meta">
-        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
+        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "Jan 02, 2006" }}</time>
         {{ if .Site.Params.readingTime }}
           <span class="article__dot" aria-hidden="true">·</span>
-          <span>{{ .ReadingTime }} min</span>
+          <span>{{ .ReadingTime }} min read</span>
         {{ end }}
-        {{- range $term := .GetTerms "tags" -}}
-          {{- $label := $term.LinkTitle -}}
-          {{- range $.Params.tags -}}
-            {{- if eq (. | urlize) ($term.Name | urlize) -}}
-              {{- $label = . -}}
-            {{- end -}}
-          {{- end -}}
-          <a class="article__tag" href="{{ $term.RelPermalink }}">{{ $label }}</a>
-        {{- end -}}
+        {{ if .Site.Params.wordCount }}
+          <span class="article__dot" aria-hidden="true">·</span>
+          <span>{{ .WordCount }} words</span>
+        {{ end }}
+        {{ with .GetTerms "tags" }}
+          <span class="article__dot" aria-hidden="true">·</span>
+          {{ range . }}
+          <a class="article__tag" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+          {{ end }}
+        {{ end }}
       </p>
     {{ end }}
   </header>
@@ -49,24 +50,7 @@
     <div class="article__content">
       {{ $content | safeHTML }}
     </div>
-    <aside class="toc" id="toc">
-      <div class="toc__inner">
-        <h4 class="toc__title">Contents</h4>
-        <div class="toc__body">
-          {{ $toc | safeHTML }}
-        </div>
-      </div>
-    </aside>
   </div>
-
-  <button class="toc-toggle" id="toc-toggle" aria-label="Toggle table of contents">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <line x1="3" y1="6" x2="21" y2="6"></line>
-      <line x1="3" y1="12" x2="15" y2="12"></line>
-      <line x1="3" y1="18" x2="18" y2="18"></line>
-    </svg>
-  </button>
-  <div class="toc-overlay" id="toc-overlay"></div>
   {{ else }}
   <div class="article__content {{ $wrap }}">
     {{ $content | safeHTML }}
@@ -92,147 +76,101 @@
 </article>
 
 {{ if $hasToc }}
+<button class="read__toc-btn" id="toc-btn" type="button" aria-expanded="false" aria-controls="toc-aside" aria-label="Table of Contents">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+</button>
+<aside class="read__toc" id="toc-aside" aria-hidden="true">
+  <div class="read__toc-bar">
+    <p class="read__toc-title">Table of Contents</p>
+    <button class="read__toc-close" id="toc-close" type="button" aria-label="关闭目录">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="toc" id="toc">
+    {{ $toc | safeHTML }}
+  </div>
+</aside>
 <script>
 (function() {
+  var aside = document.getElementById('toc-aside');
+  var btn = document.getElementById('toc-btn');
+  var closeBtn = document.getElementById('toc-close');
   var toc = document.getElementById('toc');
-  var toggle = document.getElementById('toc-toggle');
-  var overlay = document.getElementById('toc-overlay');
-  if (!toc || !toggle) return;
+  if (!aside || !btn || !toc) return;
 
-  function openToc() {
-    toc.classList.add('toc--open');
-    toggle.classList.add('toc-toggle--active');
-    if (overlay) overlay.classList.add('toc-overlay--visible');
-    document.body.classList.add('toc-panel-open');
+  var shell = document.querySelector('.page-shell--article');
+  function setOpen(open) {
+    aside.classList.toggle('is-open', open);
+    if (shell) shell.classList.toggle('is-toc-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    aside.setAttribute('aria-hidden', open ? 'false' : 'true');
   }
 
-  function closeToc() {
-    toc.classList.remove('toc--open');
-    toggle.classList.remove('toc-toggle--active');
-    if (overlay) overlay.classList.remove('toc-overlay--visible');
-    document.body.classList.remove('toc-panel-open');
-  }
-
-  toggle.addEventListener('click', function() {
-    if (toc.classList.contains('toc--open')) {
-      closeToc();
-    } else {
-      openToc();
-    }
+  btn.addEventListener('click', function() {
+    setOpen(!aside.classList.contains('is-open'));
+  });
+  if (closeBtn) closeBtn.addEventListener('click', function() { setOpen(false); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && aside.classList.contains('is-open')) setOpen(false);
   });
 
-  if (overlay) {
-    overlay.addEventListener('click', closeToc);
-  }
-
-  var links = toc.querySelectorAll('a');
-  var headings = [];         // [{ link: <a>, el: <heading> }]
-
-  function headingId(href) {
-    if (!href || href.charAt(0) !== '#') return '';
-    try { return decodeURIComponent(href.substring(1)); }
-    catch (err) { return href.substring(1); }
-  }
-
-  function jumpToHeading(href) {
-    var id = headingId(href);
-    var el = id ? document.getElementById(id) : null;
-    if (!el) return false;
-    closeToc();
-    el.scrollIntoView({ behavior: 'auto', block: 'start' });
-    try { history.replaceState(null, '', '#' + id); } catch (err) {}
-    return true;
-  }
-
-  toc.addEventListener('click', function(e) {
-    var a = e.target.closest('a[href]');
-    if (!a || !toc.contains(a)) return;
-    if (jumpToHeading(a.getAttribute('href'))) e.preventDefault();
+  var linkMap = {};
+  var headings = [];
+  toc.querySelectorAll('li').forEach(function(li) {
+    var a = li.querySelector('a');
+    if (!a) return;
+    var href = a.getAttribute('href');
+    if (!href || href.charAt(0) !== '#') return;
+    var id = href.slice(1);
+    try { id = decodeURIComponent(id); } catch (err) {}
+    if (!linkMap[id]) linkMap[id] = [];
+    linkMap[id].push(li);
+    var el = document.getElementById(id);
+    if (el) headings.push(el);
   });
 
-  for (var i = 0; i < links.length; i++) {
-    var href = links[i].getAttribute('href');
-    var el = document.getElementById(headingId(href));
-    if (el) headings.push({ link: links[i], el: el });
-  }
-
-  if (headings.length === 0) return;
-
-  toc._activeLink = null;
-  toc._headingOffset = 64;
-
-  function setActive(current) {
-    if (current === toc._activeLink) return;
-    for (var k = 0; k < links.length; k++) {
-      links[k].classList.remove('toc__link--active');
+  var current = null;
+  function applyActive() {
+    var line = window.scrollY + 96;
+    var active = null;
+    for (var i = 0; i < headings.length; i++) {
+      if (headings[i].getBoundingClientRect().top + window.scrollY <= line) active = headings[i];
+      else break;
     }
-    if (current) {
-      current.classList.add('toc__link--active');
-      if (toc.scrollHeight > toc.clientHeight) {
-        var linkOffset = current.getBoundingClientRect().top
-                       - toc.getBoundingClientRect().top
-                       + toc.scrollTop;
-        var linkH = current.getBoundingClientRect().height;
-        var tocH = toc.clientHeight;
-        var margin = 16;
-        if (linkOffset < toc.scrollTop + margin) {
-          toc.scrollTop = linkOffset - margin;
-        } else if (linkOffset + linkH > toc.scrollTop + tocH - margin) {
-          toc.scrollTop = linkOffset + linkH - tocH + margin;
-        }
-      }
+    var id = active ? active.id : null;
+    if (id === current) return;
+    if (current && linkMap[current]) {
+      linkMap[current].forEach(function(el) { el.classList.remove('active-class'); });
     }
-    toc._activeLink = current;
-  }
-
-  function fallbackActive() {
-    var current = null;
-    for (var j = 0; j < headings.length; j++) {
-      if (headings[j].el.getBoundingClientRect().top <= toc._headingOffset) {
-        current = headings[j].link;
-      }
+    if (id && linkMap[id]) {
+      linkMap[id].forEach(function(el) { el.classList.add('active-class'); });
     }
-    if (!current) {
-      var atBottom = window.innerHeight + window.scrollY >=
-                      document.documentElement.scrollHeight - 80;
-      if (atBottom) current = headings[headings.length - 1].link;
-    }
-    setActive(current);
+    current = id;
   }
-
-  if (typeof IntersectionObserver === "function") {
-    var visible = [];
-    var io = new IntersectionObserver(function (entries) {
-      for (var i = 0; i < entries.length; i++) {
-        var entry = entries[i];
-        for (var j = 0; j < headings.length; j++) {
-          if (headings[j].el === entry.target) {
-            visible[j] = entry.isIntersecting;
-            break;
-          }
-        }
-      }
-      var current = null;
-      for (var j = 0; j < headings.length; j++) {
-        if (visible[j]) { current = headings[j].link; break; }
-      }
-      if (!current) fallbackActive();
-      else setActive(current);
-    }, { rootMargin: "-64px 0px -65% 0px", threshold: 0 });
-    for (var i = 0; i < headings.length; i++) io.observe(headings[i].el);
-  } else {
-    toc._pending = false;
-    window.addEventListener("scroll", function () {
-      if (toc._pending) return;
-      toc._pending = true;
-      requestAnimationFrame(function () {
-        fallbackActive();
-        toc._pending = false;
-      });
-    });
-    fallbackActive();
-  }
+  window.addEventListener('scroll', applyActive, { passive: true });
+  applyActive();
 })();
 </script>
 {{ end }}
+<button class="to-top" id="to-top" type="button" aria-label="回到顶部" aria-hidden="true" tabindex="-1">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+</button>
+<script>
+(function() {
+  var btn = document.getElementById('to-top');
+  if (!btn) return;
+  function onScroll() {
+    var show = window.scrollY > 320;
+    btn.classList.toggle('is-visible', show);
+    btn.setAttribute('aria-hidden', show ? 'false' : 'true');
+    btn.tabIndex = show ? 0 : -1;
+  }
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  btn.addEventListener('click', function() {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+})();
+</script>
 {{ end }}

@@ -1,74 +1,18 @@
 {{ define "shell" }} page-shell--home{{ end }}
 {{ define "main" }}
-{{ $slogans := .Site.Params.heroSlogans | default (slice "一支全年摸鱼，偶尔起飞的佛系 CTF 战队。") }}
 {{ $posts := where site.RegularPages "Type" "in" site.Params.mainSections }}
-
 <section class="home">
-  <div class="home__brand">
-    {{ with .Site.Params.logo }}
-      {{- $image := partial "get-static-image.html" . -}}
-      {{ if $image }}
-        {{- $image = partial "process-image.html" (dict "image" $image "op" "fit" "spec" "160x160" "q" 80) -}}
-        <img src="{{ $image.RelPermalink }}" alt="{{ $.Site.Title }}" class="home__logo" width="80" height="80" fetchpriority="high" decoding="async">
-      {{ else }}
-        <img src="{{ . | relURL }}" alt="{{ $.Site.Title }}" class="home__logo" width="80" height="80" fetchpriority="high" decoding="async">
-      {{ end }}
-    {{ end }}
-    <h1 class="home__title" style="view-transition-name: vt-home">{{ .Site.Title }}</h1>
-  </div>
-  <p class="home__lead" id="home-slogan" aria-live="polite"></p>
-  <hr class="home__rule">
-
   <div class="home__feed">
-    <p class="home__feed-label">最近</p>
     <ul class="post-rows">
       {{ range first 8 $posts }}
         {{ partial "post_row.html" (dict "page" .) }}
       {{ end }}
     </ul>
+    {{ if gt (len $posts) 8 }}
     <p class="home__more">
-      <a href="{{ "page/archives/" | relURL }}">所有文章 &rarr;</a>
+      <a href="{{ "archives/" | relURL }}">All posts &rarr;</a>
     </p>
+    {{ end }}
   </div>
 </section>
-<script>
-(function() {
-  var slogans = {{ $slogans | jsonify | safeJS }};
-  var el = document.getElementById('home-slogan');
-  if (!el || !slogans.length) return;
-
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    el.textContent = slogans[0];
-    return;
-  }
-
-  var idx = 0, charIdx = 0, deleting = false;
-
-  function tick() {
-    if (!el.isConnected) return;
-    var current = slogans[idx];
-    if (!deleting) {
-      charIdx++;
-      el.textContent = current.substring(0, charIdx);
-      if (charIdx >= current.length) {
-        setTimeout(function() { deleting = true; tick(); }, 2000);
-        return;
-      }
-      setTimeout(tick, 80);
-    } else {
-      charIdx--;
-      el.textContent = current.substring(0, charIdx);
-      if (charIdx <= 0) {
-        deleting = false;
-        idx = (idx + 1) % slogans.length;
-        setTimeout(tick, 400);
-        return;
-      }
-      setTimeout(tick, 40);
-    }
-  }
-
-  tick();
-})();
-</script>
 {{ end }}

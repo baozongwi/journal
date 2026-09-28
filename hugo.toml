@@ -1,6 +1,6 @@
 baseURL = "https://baozongwi.xyz/journal/"
 DefaultContentLanguage = "en"
-title = "杂记"
+title = "Journal"
 theme = "su-theme"
 timeZone = "Asia/Shanghai"
 timeout = "60m"
@@ -23,10 +23,7 @@ timeout = "60m"
 [Params]
   mainSections = ["post"]
   katex = false
-  homeTitle = "杂记"
-  heroSlogans = [
-    "日记、游记，和暂时不放进技术站的文字。",
-  ]
+  homeTitle = "Journal"
   dateFormat = "January 2, 2006"
   commit = false
   rss = false
@@ -43,6 +40,15 @@ timeout = "60m"
   github = "baozongwi"
 
 disableKinds = ["RSS"]
+
+[taxonomies]
+  tag = "tags"
+
+[pagination]
+  pagerSize = 10
+
+[permalinks]
+  post = "/:slug/"
 
 [outputs]
   home = ["HTML"]
@@ -87,7 +93,7 @@ disableKinds = ["RSS"]
 
 [[menu.main]]
   name = "Archives"
-  url = "page/archives/"
+  url = "archives/"
   weight = 1
 [[menu.main]]
   name = "Tags"

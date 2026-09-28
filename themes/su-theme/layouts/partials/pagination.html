@@ -1,6 +1,13 @@
 <nav class="pagination" aria-label="Pagination">
+  {{ if .Paginator.HasPrev }}
+    <a class="pagination__link" href="{{ .Paginator.Prev.URL }}">&larr; Previous</a>
+  {{ else }}
+    <span class="pagination__link pagination__link--disabled">&larr; Previous</span>
+  {{ end }}
   <span class="pagination__info">{{ .Paginator.PageNumber }} / {{ .Paginator.TotalPages }}</span>
   {{ if .Paginator.HasNext }}
-    <a href="{{ .Paginator.Next.URL }}" class="pagination__link">下一页 &rarr;</a>
+    <a class="pagination__link" href="{{ .Paginator.Next.URL }}">Next &rarr;</a>
+  {{ else }}
+    <span class="pagination__link pagination__link--disabled">Next &rarr;</span>
   {{ end }}
 </nav>

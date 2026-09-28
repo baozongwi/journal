@@ -1,15 +1,19 @@
 {{ define "shell" }} page-shell--list{{ end }}
 {{ define "main" }}
 {{ $posts := where site.RegularPages "Type" "in" site.Params.mainSections }}
+{{ $paginator := .Paginate $posts }}
 <section class="archives">
   <header class="archives__header">
     <h1 class="archives__title" style="view-transition-name: vt-archives">Archives</h1>
     <p class="archives__count">{{ len $posts }} posts</p>
   </header>
   <ul class="post-list">
-    {{ range $posts }}
+    {{ range $paginator.Pages }}
       {{ partial "catalog-item.html" . }}
     {{ end }}
   </ul>
+  {{ if gt $paginator.TotalPages 1 }}
+    {{ partial "pagination.html" . }}
+  {{ end }}
 </section>
 {{ end }}
