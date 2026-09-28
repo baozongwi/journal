@@ -1,0 +1,76 @@
+:root {
+  --paper: #f6f1e7;
+  --ink: #1d1914;
+  --muted: #6d6458;
+  --line: #e2d8c8;
+  --mark: #8d3a2f;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--paper); }
+
+body {
+  margin: 0 auto;
+  max-width: 40rem;
+  padding: 3.5rem 1.4rem 4rem;
+  color: var(--ink);
+  font-family: "Songti SC", "Noto Serif SC", "Source Han Serif SC", "Iowan Old Style", Palatino, serif;
+  font-size: 1.08rem;
+  line-height: 1.75;
+}
+
+a { color: inherit; }
+
+.site {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 3.2rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.mark {
+  color: var(--mark);
+  font-size: 1.35rem;
+  letter-spacing: 0.18em;
+  text-decoration: none;
+}
+
+nav { display: flex; gap: 1.1rem; }
+
+nav a {
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+nav a[aria-current="page"] { color: var(--ink); }
+
+.lede {
+  margin: 0 0 2.4rem;
+  color: var(--muted);
+}
+
+.empty {
+  padding: 1.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.empty p { margin: 0; }
+
+.page h1 {
+  margin: 0 0 1rem;
+  font-size: 1.7rem;
+  font-weight: 500;
+}
+
+footer {
+  margin-top: 4rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+footer a { color: var(--muted); }
