@@ -1,16 +1,17 @@
 {{ define "shell" }} page-shell--list{{ end }}
 {{ define "main" }}
-{{ $posts := where site.RegularPages "Type" "in" site.Params.mainSections }}
-{{ $paginator := .Paginate $posts 10 }}
 <section class="archives">
-  <h1 class="visually-hidden">Archives</h1>
+  <header class="page-list__header">
+    <h1 class="page-list__title">{{ .Title }}</h1>
+  </header>
   <ul class="post-rows post-rows--archive">
-    {{ range $paginator.Pages }}
+    {{ range .Paginator.Pages }}
       {{ partial "post_row.html" (dict "page" . "showSub" true) }}
     {{ end }}
   </ul>
-  {{ if gt $paginator.TotalPages 1 }}
+  {{ if or (.Paginator.HasPrev) (.Paginator.HasNext) }}
     {{ partial "pagination.html" . }}
   {{ end }}
 </section>
 {{ end }}
+

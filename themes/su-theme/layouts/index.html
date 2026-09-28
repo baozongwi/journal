@@ -4,11 +4,11 @@
 <section class="home">
   <div class="home__feed">
     <ul class="post-rows">
-      {{ range first 8 $posts }}
+      {{ range first 5 $posts }}
         {{ partial "post_row.html" (dict "page" .) }}
       {{ end }}
     </ul>
-    {{ if gt (len $posts) 8 }}
+    {{ if gt (len $posts) 5 }}
     <p class="home__more">
       <a href="{{ "archives/" | relURL }}">All posts &rarr;</a>
     </p>

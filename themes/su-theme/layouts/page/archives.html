@@ -2,13 +2,9 @@
 {{ define "main" }}
 {{ $posts := where site.RegularPages "Type" "in" site.Params.mainSections }}
 <section class="archives">
-  <header class="archives__header">
-    <h1 class="archives__title" style="view-transition-name: vt-archives">Archives</h1>
-    <p class="archives__count">{{ len $posts }} posts</p>
-  </header>
-  <ul class="post-list">
+  <ul class="post-rows post-rows--archive">
     {{ range $posts }}
-      {{ partial "catalog-item.html" . }}
+      {{ partial "post_row.html" (dict "page" . "showSub" true) }}
     {{ end }}
   </ul>
 </section>

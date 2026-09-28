@@ -35,12 +35,6 @@
           <span class="article__dot" aria-hidden="true">·</span>
           <span>{{ .WordCount }} words</span>
         {{ end }}
-        {{ with .GetTerms "tags" }}
-          <span class="article__dot" aria-hidden="true">·</span>
-          {{ range . }}
-          <a class="article__tag" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
-          {{ end }}
-        {{ end }}
       </p>
     {{ end }}
   </header>
@@ -58,6 +52,13 @@
   {{ end }}
 
   {{ if ne .Type "page" }}
+  {{ with .GetTerms "tags" }}
+  <p class="article__tags">
+    {{ range . }}
+    <a class="article__tag" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+    {{ end }}
+  </p>
+  {{ end }}
   <nav class="article__nav container--article">
     {{ with .PrevInSection }}
       <a href="{{ .RelPermalink }}" class="article__nav-link article__nav-link--prev">
