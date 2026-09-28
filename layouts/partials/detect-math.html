@@ -1,0 +1,12 @@
+{{- $raw := .RawContent | default "" -}}
+{{- $raw = replaceRE "```[\\s\\S]*?```" " " $raw -}}
+{{- $raw = replaceRE "~~~[\\s\\S]*?~~~" " " $raw -}}
+{{- $raw = replaceRE "`[^`\n]+`" " " $raw -}}
+{{- $has := or (in $raw "$$") (in $raw "\\begin{") (in $raw "\\(") (in $raw "\\[") -}}
+{{- if not $has -}}
+  {{- $has = gt (len (findRE "\\$[^$\\n]*[\\\\^_{}][^$\\n]*\\$" $raw)) 0 -}}
+{{- end -}}
+{{- if not $has -}}
+  {{- $has = gt (len (findRE "\\$[A-Za-z][A-Za-z0-9]{0,12}\\$" $raw)) 0 -}}
+{{- end -}}
+{{- return $has -}}

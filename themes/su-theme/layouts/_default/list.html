@@ -1,0 +1,27 @@
+{{ define "shell" }} page-shell--list{{ end }}
+{{ define "main" }}
+<section class="page-list">
+  <header class="page-list__header">
+    <h1 class="page-list__title">{{ .Title }}</h1>
+    {{ with .Description }}
+      <p class="page-list__desc">{{ . }}</p>
+    {{ end }}
+  </header>
+
+  {{ with .Content }}
+    <div class="page-list__content">
+      {{ . }}
+    </div>
+  {{ end }}
+
+  <ul class="post-rows">
+    {{ range .Paginator.Pages }}
+      {{ partial "post_row.html" (dict "page" . "showSub" true) }}
+    {{ end }}
+  </ul>
+
+  {{ if or (.Paginator.HasPrev) (.Paginator.HasNext) }}
+    {{ partial "pagination.html" . }}
+  {{ end }}
+</section>
+{{ end }}

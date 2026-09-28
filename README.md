@@ -1,7 +1,5 @@
 # 杂记
 
-日记和杂谈的静态站。技术文章仍在 [baozongwi.xyz](https://baozongwi.xyz/)。
+Hugo 站，主题是 `su-theme`。推到 `main` 后由 GitHub Actions 发布到 https://baozongwi.xyz/journal/ 。
 
-仓库公开后由 GitHub Pages 从 `main` 分支根目录发布，地址是：
-
-https://baozongwi.github.io/journal/
+技术文章仍在 https://baozongwi.xyz/ 。

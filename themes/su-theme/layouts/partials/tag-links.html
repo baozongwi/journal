@@ -1,0 +1,9 @@
+{{- range $term := .GetTerms "tags" -}}
+  {{- $label := $term.LinkTitle -}}
+  {{- range $.Params.tags -}}
+    {{- if eq (. | urlize) ($term.Name | urlize) -}}
+      {{- $label = . -}}
+    {{- end -}}
+  {{- end -}}
+  <a href="{{ $term.RelPermalink }}" class="tag">{{ $label }}</a>
+{{- end -}}

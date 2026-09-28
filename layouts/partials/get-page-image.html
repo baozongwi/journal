@@ -1,0 +1,28 @@
+{{- $page := .page -}}
+{{- $dest := strings.TrimPrefix "./" (.path | default "") -}}
+{{- $dest = path.Clean $dest -}}
+{{- $image := false -}}
+{{- with $page -}}
+  {{- with .Resources.GetMatch $dest -}}
+    {{- if eq .MediaType.MainType "image" -}}{{- $image = . -}}{{- end -}}
+  {{- end -}}
+  {{- if not $image -}}
+    {{- with .Resources.GetMatch (path.Base $dest) -}}
+      {{- if eq .MediaType.MainType "image" -}}{{- $image = . -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if and (not $image) .File -}}
+    {{- $rel := $dest -}}
+    {{- if hasPrefix $rel "/" -}}
+      {{- $rel = strings.TrimPrefix $rel "/" -}}
+    {{- else -}}
+      {{- $rel = path.Clean (path.Join .File.Dir $dest) -}}
+    {{- end -}}
+    {{- if not (hasPrefix $rel "../") -}}
+      {{- with resources.Get (printf "c/%s" $rel) -}}
+        {{- if eq .MediaType.MainType "image" -}}{{- $image = . -}}{{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $image -}}

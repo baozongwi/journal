@@ -1,0 +1,70 @@
+{{- $image := .image -}}
+{{- $cap := .width | default 1600 -}}
+{{- $q := 80 -}}
+{{- $op := "" -}}
+{{- $crop := "" -}}
+{{- with index . "q" }}{{ $q = int . }}{{ end -}}
+{{- with index . "op" }}{{ $op = . }}{{ end -}}
+{{- with index . "spec" }}{{ $crop = . }}{{ end -}}
+{{- $spec := printf "webp q%d hint drawing" $q -}}
+{{- $rendered := $image -}}
+{{- $sub := $image.MediaType.SubType -}}
+{{- if or (eq $sub "gif") (eq $sub "svg+xml") -}}
+{{- else if and $op $crop -}}
+  {{- $specStr := printf "%s %s" $crop $spec -}}
+  {{- $tr := dict "Err" true -}}
+  {{- if eq $op "fill" -}}
+    {{- $tr = try ($image.Fill $specStr) -}}
+  {{- else if eq $op "resize" -}}
+    {{- $tr = try ($image.Resize $specStr) -}}
+  {{- else if eq $op "fit" -}}
+    {{- $tr = try ($image.Fit $specStr) -}}
+  {{- end -}}
+  {{- if $tr.Err -}}
+    {{- $work := $image | resources.Copy (printf "c/_norm/%s.webp" (md5 $image.Name)) -}}
+    {{- if eq $op "fill" -}}
+      {{- $tr = try ($work.Fill $specStr) -}}
+    {{- else if eq $op "resize" -}}
+      {{- $tr = try ($work.Resize $specStr) -}}
+    {{- else if eq $op "fit" -}}
+      {{- $tr = try ($work.Fit $specStr) -}}
+    {{- end -}}
+    {{- if not $tr.Err -}}
+      {{- $rendered = $tr.Value -}}
+    {{- else -}}
+      {{- $rendered = $work -}}
+    {{- end -}}
+  {{- else -}}
+    {{- $rendered = $tr.Value -}}
+  {{- end -}}
+{{- else -}}
+  {{- $w := $image.Width -}}
+  {{- $h := $image.Height -}}
+  {{- $target := $w -}}
+  {{- if gt $w $cap -}}{{- $target = $cap -}}{{- end -}}
+  {{- $need := or (gt $w $cap) (gt $h $cap) (ne $sub "webp") -}}
+  {{- if $need -}}
+    {{- $tr := dict "Err" true -}}
+    {{- if gt $h $cap -}}
+      {{- $tr = try ($image.Fit (printf "%dx%d %s" $cap $cap $spec)) -}}
+    {{- else -}}
+      {{- $tr = try ($image.Resize (printf "%dx %s" $target $spec)) -}}
+    {{- end -}}
+    {{- if $tr.Err -}}
+      {{- $work := $image | resources.Copy (printf "c/_norm/%s.webp" (md5 $image.Name)) -}}
+      {{- if gt $h $cap -}}
+        {{- $tr = try ($work.Fit (printf "%dx%d %s" $cap $cap $spec)) -}}
+      {{- else -}}
+        {{- $tr = try ($work.Resize (printf "%dx %s" $target $spec)) -}}
+      {{- end -}}
+      {{- if not $tr.Err -}}
+        {{- $rendered = $tr.Value -}}
+      {{- else -}}
+        {{- $rendered = $work -}}
+      {{- end -}}
+    {{- else -}}
+      {{- $rendered = $tr.Value -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $rendered -}}

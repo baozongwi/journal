@@ -1,0 +1,18 @@
+{{- $page := .page -}}
+{{- $content := printf "%s" .content -}}
+{{- $tags := findRE `(?i)<img\s[^>]*src=["'][^"']+\.(?:png|jpe?g|webp)["'][^>]*>` $content -}}
+{{- range $tags -}}
+  {{- $tag := . -}}
+  {{- $src := replaceRE `(?i)(?s).*?\ssrc=["']([^"']+)["'].*` `$1` $tag -}}
+  {{- if and $src (ne $src $tag) (not (hasPrefix $src "http://")) (not (hasPrefix $src "https://")) (not (hasPrefix $src "data:")) (not (hasPrefix $src "/")) -}}
+    {{- $res := partial "get-page-image.html" (dict "page" $page "path" $src) -}}
+    {{- with $res -}}
+      {{- $processed := partial "process-image.html" (dict "image" .) -}}
+      {{- $newSrc := $processed.RelPermalink -}}
+      {{- $newTag := replace $tag $src $newSrc -}}
+      {{- $newTag = replace $newTag "<img " (printf "<img class=\"blog-post__image\" data-fullsrc=%q " $newSrc) -}}
+      {{- $content = replace $content $tag $newTag -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $content -}}

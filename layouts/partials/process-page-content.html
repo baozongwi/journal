@@ -1,0 +1,3 @@
+{{- $content := partial "fix-email-autolinks.html" .Content -}}
+{{- $content = partial "rewrite-html-images.html" (dict "page" . "content" $content) -}}
+{{- return $content -}}

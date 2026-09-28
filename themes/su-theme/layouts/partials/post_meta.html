@@ -1,0 +1,21 @@
+<span class="post-meta">
+  <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format (.Site.Params.dateFormat | default "January 2, 2006") }}</time>
+  {{ if .Site.Params.readingTime }}
+    <span class="post-meta__sep">&middot;</span>
+    <span>{{ .ReadingTime }} min read</span>
+  {{ end }}
+  {{ if .Site.Params.wordCount }}
+    <span class="post-meta__sep">&middot;</span>
+    <span>{{ .WordCount }} words</span>
+  {{ end }}
+  {{ if not .Site.Params.hideAuthor }}
+    {{ if .Params.author }}
+      <span class="post-meta__sep">&middot;</span>
+      {{ if reflect.IsSlice .Params.author }}
+        {{ range $i, $a := .Params.author }}{{ if $i }}, {{ end }}{{ $a }}{{ end }}
+      {{ else }}
+        <span>{{ .Params.author }}</span>
+      {{ end }}
+    {{ end }}
+  {{ end }}
+</span>

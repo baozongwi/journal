@@ -1,0 +1,13 @@
+{{- $showSub := .showSub | default false -}}
+{{- $p := .page -}}
+<li class="post-row">
+  <a class="post-row__link" href="{{ $p.RelPermalink }}">
+    <span class="post-row__title" style="view-transition-name: {{ partial "vt-name.html" $p }}">{{ $p.Title }}</span>
+    <time class="post-row__date" datetime="{{ $p.Date.Format "2006-01-02" }}">{{ $p.Date.Format "2006-01-02" }}</time>
+  </a>
+  {{- if $showSub -}}
+    {{- with $p.Params.subtitle -}}
+      <p class="post-row__sub">{{ . }}</p>
+    {{- end -}}
+  {{- end -}}
+</li>

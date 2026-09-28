@@ -1,0 +1,18 @@
+{{ define "shell" }} page-shell--list{{ end }}
+{{ define "main" }}
+<div class="tags-page">
+    <header class="tags-page__header">
+      <h1 class="tags-page__title" style="view-transition-name: vt-tags">Tags</h1>
+      <p class="tags-page__count">{{ len .Data.Terms.ByCount }} tags total</p>
+    </header>
+
+    <div class="tags-cloud">
+      {{ range .Data.Terms.ByCount }}
+        <a href="{{ .Page.RelPermalink }}" class="tags-cloud__tag" data-count="{{ .Count }}">
+          <span class="tags-cloud__name">{{ .Page.LinkTitle }}</span>
+          <span class="tags-cloud__count">{{ .Count }}</span>
+        </a>
+      {{ end }}
+    </div>
+</div>
+{{ end }}

@@ -1,0 +1,10 @@
+{{ define "shell" }} page-shell--prose{{ end }}
+{{ define "main" }}
+<div class="page-404">
+  <div class="container">
+    <h1 class="page-404__code">404</h1>
+    <p class="page-404__text">Page not found</p>
+    <a href="{{ "" | relLangURL }}" class="page-404__link">Back to home &rarr;</a>
+  </div>
+</div>
+{{ end }}

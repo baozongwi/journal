@@ -1,0 +1,118 @@
+{{- if eq .Kind "taxonomy" -}}
+  {{- $.Scratch.Set "Title" (printf "#%s" $.Title) -}}
+{{- else -}}
+  {{- $.Scratch.Set "Title" (.Title | default .Site.Title) -}}
+{{- end -}}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{{ if .IsHome }}
+<title>{{ .Site.Params.homeTitle | default .Site.Title }}</title>
+{{ else }}
+<title>{{ $.Scratch.Get "Title" }} - {{ .Site.Params.homeTitle | default .Site.Title }}</title>
+{{ end }}
+{{- $desc := .Description | default .Params.subtitle | default .Params.summary -}}
+{{- if not $desc -}}
+  {{- $desc = .RawContent | truncate 800 | plainify | truncate 160 -}}
+{{- end -}}
+{{- if not $desc -}}
+  {{- $desc = .Site.Params.homeDescription -}}
+{{- end -}}
+<meta name="description" content="{{ $desc | plainify | truncate 160 }}">
+{{- with .Site.Params.author.name }}
+<meta name="author" content="{{ . }}">
+{{- end }}
+{{- with .Site.Params.favicon }}
+  {{- $icon := resources.Get . -}}
+  {{- if $icon }}
+<link rel="icon" href="{{ ($icon.Resize "32x32 png").RelPermalink }}" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="{{ ($icon.Resize "180x180 png").RelPermalink }}">
+  {{- else }}
+<link rel="icon" href="{{ . | relURL }}" type="image/png">
+  {{- end }}
+{{- end }}
+
+
+<script>
+(function() {
+  // Clean up any residual localStorage value from old logic
+  try { localStorage.removeItem('theme'); } catch(e) {}
+
+  var theme;
+  try { theme = sessionStorage.getItem('theme'); } catch(e) {}
+  if (!theme) {
+    theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', theme);
+
+  // Follow OS theme changes when no manual preference is set this session
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    mq.addEventListener('change', function(e) {
+      var stored;
+      try { stored = sessionStorage.getItem('theme'); } catch(_) {}
+      if (!stored) {
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+      }
+    });
+  }
+})();
+</script>
+
+{{- /* KaTeX：忽略代码块里的 $$，避免 writeup dump 误伤；front matter katex 可覆盖 */ -}}
+{{- $hasMath := partial "detect-math.html" . -}}
+{{- if isset .Params "katex" -}}
+  {{- if eq (printf "%T" .Params.katex) "bool" -}}
+    {{- $hasMath = .Params.katex -}}
+  {{- end -}}
+{{- end -}}
+{{- if $hasMath -}}
+  {{- $.Scratch.Set "hasMath" true -}}
+  {{- if .Site.Params.selfHosted }}
+    {{- with resources.Get "s/css/katex.min.css" -}}
+      {{- $sheet := . | fingerprint -}}
+<link rel="stylesheet" href="{{ $sheet.RelPermalink }}" integrity="{{ $sheet.Data.Integrity }}" crossorigin="anonymous">
+    {{- else -}}
+<link rel="stylesheet" href="{{ "css/katex.min.css" | relURL }}">
+    {{- end }}
+  {{- else }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
+  {{- end }}
+{{- end }}
+
+{{- /* 思源黑体：只用站点实际出现过的 unicode 切片 + latin */ -}}
+{{- if .Site.Params.selfHosted }}
+<link rel="preload" as="font" type="font/woff2" href="{{ "fonts/noto-sans-sc/files/noto-sans-sc-latin-400-normal.woff2" | relURL }}" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="{{ "fonts/noto-sans-sc/files/noto-sans-sc-117-400-normal.woff2" | relURL }}" crossorigin>
+  {{- $fontCss := resources.Get "s/fonts/noto-sans-sc/site.css" | default (resources.Get "s/fonts/noto-sans-sc/400.css") -}}
+  {{- with $fontCss -}}
+    {{- $sheet := . | minify | fingerprint -}}
+<link rel="preload" as="style" href="{{ $sheet.RelPermalink }}" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="{{ $sheet.RelPermalink }}"></noscript>
+  {{- end }}
+{{- else }}
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc/700.css">
+{{- end }}
+
+{{ $css := resources.Get "css/main.css" }}
+{{ with $css }}
+  {{- $sheet := . | minify | fingerprint -}}
+  <link rel="stylesheet" href="{{ $sheet.RelPermalink }}" integrity="{{ $sheet.Data.Integrity }}" crossorigin="anonymous">
+{{ end }}
+
+{{- if not .Site.Params.useHLJS -}}
+  {{- $needsSyntax := or (eq .Type "post") (strings.Contains .RawContent "```") -}}
+  {{- if $needsSyntax }}
+    {{- with resources.Get "s/css/syntax.css" -}}
+      {{- $sheet := . | minify | fingerprint -}}
+<link rel="stylesheet" href="{{ $sheet.RelPermalink }}" integrity="{{ $sheet.Data.Integrity }}" crossorigin="anonymous">
+    {{- else -}}
+<link rel="stylesheet" href="{{ "css/syntax.css" | relURL }}">
+    {{- end }}
+  {{- end -}}
+{{- end }}
+
+{{- if not hugo.IsServer }}
+{{ template "_internal/google_analytics.html" . }}
+{{- end }}

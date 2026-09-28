@@ -1,0 +1,81 @@
+{{- $page := or .PageInner .Page -}}
+{{- $dst := .Destination -}}
+{{- $ext := path.Ext $dst | strings.ToLower -}}
+{{- $img := "" -}}
+{{- $full := "" -}}
+{{- $srcset := "" -}}
+{{- $ow := 0 -}}
+{{- $oh := 0 -}}
+{{- $alt := strings.TrimSpace .PlainText | strings.ToLower -}}
+{{- $ranking := or (in $alt "排名") (eq $alt "rank") (in $alt "ranking") (in $alt "scoreboard") (in $alt "leaderboard") -}}
+{{- with $page.Params.rankingImage -}}
+  {{- $want := strings.TrimSpace (printf "%s" .) -}}
+  {{- if and $want (eq (strings.ToLower (path.Base $dst)) (strings.ToLower (path.Base $want))) -}}
+    {{- $ranking = true -}}
+  {{- end -}}
+{{- end -}}
+{{- $eager := eq .Ordinal 0 -}}
+{{- $skipProcess := or
+  (not $dst)
+  (strings.HasPrefix $dst "/")
+  (strings.HasPrefix $dst "#")
+  (strings.HasPrefix $dst "http://")
+  (strings.HasPrefix $dst "https://")
+  (strings.HasPrefix $dst "mailto:")
+  (strings.HasPrefix $dst "tel:")
+  (strings.HasPrefix $dst "data:")
+  (eq $ext ".gif")
+  (eq $ext ".svg")
+-}}
+{{- if not $skipProcess -}}
+  {{- $res := partial "get-page-image.html" (dict "page" $page "path" $dst) -}}
+  {{- with $res -}}
+    {{- $ow = .Width -}}
+    {{- $oh = .Height -}}
+    {{- if $ranking -}}
+      {{- $a := partial "process-image.html" (dict "image" . "width" $ow "q" 100) -}}
+      {{- $img = $a -}}
+      {{- $full = $a.RelPermalink -}}
+    {{- else -}}
+      {{- $displayW := 900 -}}
+      {{- $fullW := 1600 -}}
+      {{- $q := 80 -}}
+      {{- if gt $ow $fullW -}}
+        {{- $a1 := partial "process-image.html" (dict "image" . "width" $displayW "q" $q) -}}
+        {{- $a2 := partial "process-image.html" (dict "image" . "width" $fullW "q" $q) -}}
+        {{- $img = $a1 -}}
+        {{- $full = $a2.RelPermalink -}}
+        {{- $srcset = printf "%s %dw, %s %dw" $a1.RelPermalink $displayW $a2.RelPermalink $fullW -}}
+      {{- else if gt $ow $displayW -}}
+        {{- $a1 := partial "process-image.html" (dict "image" . "width" $displayW "q" $q) -}}
+        {{- $a2 := partial "process-image.html" (dict "image" . "width" $ow "q" $q) -}}
+        {{- $img = $a1 -}}
+        {{- $full = $a2.RelPermalink -}}
+        {{- $srcset = printf "%s %dw, %s %dw" $a1.RelPermalink $displayW $a2.RelPermalink $ow -}}
+      {{- else -}}
+        {{- $a := partial "process-image.html" (dict "image" . "q" $q) -}}
+        {{- $img = $a -}}
+        {{- $full = $a.RelPermalink -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $src := "" -}}
+{{- if not $img -}}
+  {{- $src = partial "page-resource-url.html" (dict "page" $page "path" $dst) -}}
+  {{- if and (not $full) $src -}}
+    {{- $full = $src -}}
+  {{- end -}}
+{{- end -}}
+<img
+  class="blog-post__image"
+  src="{{ if $img }}{{ $img.RelPermalink }}{{ else }}{{ $src }}{{ end }}"
+  {{- if $srcset }} srcset="{{ $srcset }}" sizes="(max-width: 900px) calc(100vw - 32px), 850px"{{ end }}
+  {{- if $ow }} width="{{ $ow }}" height="{{ $oh }}"{{ end }}
+  {{- if $full }} data-fullsrc="{{ $full }}"{{ end }}
+  alt="{{ .PlainText }}"
+  {{- with .Title }} title="{{ . }}"{{- end }}
+  loading="{{ if $eager }}eager{{ else }}lazy{{ end }}"
+  {{- if $eager }} fetchpriority="high"{{ end }}
+  decoding="async"
+>

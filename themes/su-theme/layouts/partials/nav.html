@@ -1,0 +1,83 @@
+<header class="site-header" id="navbar">
+  <div class="site-header__inner">
+    <a class="site-header__logo" href="{{ "" | relLangURL }}">
+      <span class="site-header__title">{{ .Site.Title }}</span>
+    </a>
+
+      <nav class="site-nav" id="site-nav" role="navigation">
+        <ul class="site-nav__list">
+          {{- $curr := .RelPermalink -}}
+          {{ range $index, $menu := .Site.Menus.main.ByWeight }}
+            {{ if $menu.HasChildren }}
+              {{- $parentActive := false -}}
+              {{- range $menu.Children -}}
+                {{- $childHref := .URL | relLangURL -}}
+                {{- if and $childHref (not (hasSuffix $childHref "/")) -}}
+                  {{- $childHref = printf "%s/" $childHref -}}
+                {{- end -}}
+                {{- if or (eq $curr $childHref) (and $childHref (hasPrefix $curr $childHref)) -}}
+                  {{- $parentActive = true -}}
+                {{- end -}}
+              {{- end -}}
+              <li class="site-nav__item site-nav__item--dropdown">
+                <button type="button" class="site-nav__link site-nav__link--parent{{ if $parentActive }} site-nav__link--active{{ end }}" aria-haspopup="true" aria-expanded="false">
+                  <span>{{ $menu.Name }}</span>
+                  <svg class="site-nav__chevron" width="10" height="6" viewBox="0 0 10 6" fill="none">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <ul class="site-nav__dropdown">
+                  {{ range $menu.Children }}
+                    {{- $href := .URL | relLangURL -}}
+                    {{- $hrefSlash := $href -}}
+                    {{- if and $hrefSlash (not (hasSuffix $hrefSlash "/")) -}}
+                      {{- $hrefSlash = printf "%s/" $hrefSlash -}}
+                    {{- end -}}
+                    {{- $childActive := or (eq $curr $hrefSlash) (and $hrefSlash (hasPrefix $curr $hrefSlash)) -}}
+                    <li>
+                      <a class="site-nav__dropdown-link{{ if $childActive }} site-nav__dropdown-link--active{{ end }}" href="{{ $href }}"{{ if $childActive }} aria-current="page"{{ end }}>{{ .Name }}</a>
+                    </li>
+                  {{ end }}
+                </ul>
+              </li>
+            {{ else }}
+              {{- $href := $menu.URL | relLangURL -}}
+              {{- $hrefSlash := $href -}}
+              {{- if and $hrefSlash (not (hasSuffix $hrefSlash "/")) -}}
+                {{- $hrefSlash = printf "%s/" $hrefSlash -}}
+              {{- end -}}
+              {{- $active := or (eq $curr $hrefSlash) (and $hrefSlash (hasPrefix $curr $hrefSlash)) -}}
+              <li class="site-nav__item">
+                <a class="site-nav__link{{ if $active }} site-nav__link--active{{ end }}" href="{{ $href }}"{{ if $active }} aria-current="page"{{ end }}>
+                  <span>{{ $menu.Name }}</span>
+                </a>
+              </li>
+            {{ end }}
+          {{ end }}
+        </ul>
+      </nav>
+
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">
+        <svg class="theme-toggle__sun" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="theme-toggle__moon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+        </svg>
+      </button>
+
+  </div>
+</header>
+
+<script>
+(function() {
+  var toggle = document.getElementById('theme-toggle');
+  if (!toggle) return;
+  toggle.addEventListener('click', function() {
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { sessionStorage.setItem('theme', next); } catch (e) {}
+  });
+})();
+</script>

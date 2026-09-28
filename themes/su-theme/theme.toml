@@ -1,0 +1,8 @@
+name = "su-theme"
+license = "MIT"
+licenselink = "https://github.com/team-su"
+description = "Minimalist white theme for SU CTF team blog"
+min_version = "0.124.0"
+
+[author]
+  name = "SU Team"

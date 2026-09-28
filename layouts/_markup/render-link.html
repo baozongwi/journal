@@ -1,0 +1,3 @@
+{{- $page := or .PageInner .Page -}}
+{{- $href := partial "page-resource-url.html" (dict "page" $page "path" .Destination) -}}
+<a href="{{ $href | safeURL }}"{{ with .Title }} title="{{ . }}"{{ end }}>{{ .Text | safeHTML }}</a>

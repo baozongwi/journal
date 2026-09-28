@@ -1,0 +1,8 @@
+{{- /* 仅 CI 转 webp；本地 hugo 直接用原图，不写 webp。 */ -}}
+{{- $out := .image -}}
+{{- if or (eq (getenv "HUGO_PROCESS_WEBP") "1") (eq (getenv "CI") "true") -}}
+  {{- $id := .image.RelPermalink | default .image.Name -}}
+  {{- $key := printf "%s|%v|%v|%v|%v" $id (.width | default 0) (.q | default 0) (.op | default "") (.spec | default "") -}}
+  {{- $out = partialCached "process-image-inner.html" . $key -}}
+{{- end -}}
+{{- return $out -}}

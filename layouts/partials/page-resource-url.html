@@ -1,0 +1,34 @@
+{{- $page := .page -}}
+{{- $path := .path | default "" | strings.TrimSpace -}}
+{{- if not $path -}}
+{{- else if or
+  (hasPrefix $path "/")
+  (hasPrefix $path "#")
+  (hasPrefix $path "http://")
+  (hasPrefix $path "https://")
+  (hasPrefix $path "mailto:")
+  (hasPrefix $path "tel:")
+  (hasPrefix $path "data:")
+-}}
+  {{- $path -}}
+{{- else -}}
+  {{- $img := partial "get-page-image.html" (dict "page" $page "path" $path) -}}
+  {{- if $img -}}
+    {{- $processed := partial "process-image.html" (dict "image" $img) -}}
+    {{- $processed.RelPermalink -}}
+  {{- else -}}
+    {{- $normalized := strings.TrimPrefix "./" $path -}}
+    {{- $resource := "" -}}
+    {{- with $page -}}
+      {{- $resource = .Resources.GetMatch $normalized -}}
+      {{- if not $resource -}}
+        {{- $resource = .Resources.GetMatch (printf "**/%s" $normalized) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- with $resource -}}
+      {{- .RelPermalink -}}
+    {{- else -}}
+      {{- $path -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}

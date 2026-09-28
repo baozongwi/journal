@@ -1,0 +1,238 @@
+{{ define "shell" }} page-shell--article{{ end }}
+{{ define "main" }}
+{{ $tocParam := .Params.toc }}
+{{ $toc := .TableOfContents }}
+{{ $tocEnabled := ne .Type "page" }}
+{{ if isset .Params "toc" }}
+  {{ if eq (printf "%T" $tocParam) "bool" }}
+    {{ if not $tocParam }}
+      {{ $tocEnabled = false }}
+    {{ end }}
+  {{ else }}
+    {{ $toc = $tocParam }}
+  {{ end }}
+{{ end }}
+{{ $hasToc := and $tocEnabled (gt (len (findRE "<a " (printf "%s" $toc))) 0) }}
+{{ $content := partial "process-page-content.html" . }}
+{{ $.Scratch.Set "needsArticleJs" (or (in $content "highlight") (in $content "<pre") (in $content "<img")) }}
+{{ $wide := .Params.wide | default false }}
+{{ $wrap := cond $wide "container" "container--article" }}
+
+<article class="article{{ if $wide }} article--wide{{ end }}">
+  <header class="article__header">
+    <h1 class="article__title" style="view-transition-name: {{ partial "vt-name.html" . }}">{{ .Title }}</h1>
+    {{ with .Params.subtitle }}
+      <p class="article__subtitle">{{ . }}</p>
+    {{ end }}
+    {{ if ne .Type "page" }}
+      <p class="article__meta">
+        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
+        {{ if .Site.Params.readingTime }}
+          <span class="article__dot" aria-hidden="true">·</span>
+          <span>{{ .ReadingTime }} min</span>
+        {{ end }}
+        {{- range $term := .GetTerms "tags" -}}
+          {{- $label := $term.LinkTitle -}}
+          {{- range $.Params.tags -}}
+            {{- if eq (. | urlize) ($term.Name | urlize) -}}
+              {{- $label = . -}}
+            {{- end -}}
+          {{- end -}}
+          <a class="article__tag" href="{{ $term.RelPermalink }}">{{ $label }}</a>
+        {{- end -}}
+      </p>
+    {{ end }}
+  </header>
+
+  {{ if $hasToc }}
+  <div class="article__body">
+    <div class="article__content">
+      {{ $content | safeHTML }}
+    </div>
+    <aside class="toc" id="toc">
+      <div class="toc__inner">
+        <h4 class="toc__title">Contents</h4>
+        <div class="toc__body">
+          {{ $toc | safeHTML }}
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <button class="toc-toggle" id="toc-toggle" aria-label="Toggle table of contents">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="12" x2="15" y2="12"></line>
+      <line x1="3" y1="18" x2="18" y2="18"></line>
+    </svg>
+  </button>
+  <div class="toc-overlay" id="toc-overlay"></div>
+  {{ else }}
+  <div class="article__content {{ $wrap }}">
+    {{ $content | safeHTML }}
+  </div>
+  {{ end }}
+
+  {{ if ne .Type "page" }}
+  <nav class="article__nav container--article">
+    {{ with .PrevInSection }}
+      <a href="{{ .RelPermalink }}" class="article__nav-link article__nav-link--prev">
+        <span class="article__nav-label">&larr; Previous</span>
+        <span class="article__nav-title">{{ .Title }}</span>
+      </a>
+    {{ end }}
+    {{ with .NextInSection }}
+      <a href="{{ .RelPermalink }}" class="article__nav-link article__nav-link--next">
+        <span class="article__nav-label">Next &rarr;</span>
+        <span class="article__nav-title">{{ .Title }}</span>
+      </a>
+    {{ end }}
+  </nav>
+  {{ end }}
+</article>
+
+{{ if $hasToc }}
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  var toggle = document.getElementById('toc-toggle');
+  var overlay = document.getElementById('toc-overlay');
+  if (!toc || !toggle) return;
+
+  function openToc() {
+    toc.classList.add('toc--open');
+    toggle.classList.add('toc-toggle--active');
+    if (overlay) overlay.classList.add('toc-overlay--visible');
+    document.body.classList.add('toc-panel-open');
+  }
+
+  function closeToc() {
+    toc.classList.remove('toc--open');
+    toggle.classList.remove('toc-toggle--active');
+    if (overlay) overlay.classList.remove('toc-overlay--visible');
+    document.body.classList.remove('toc-panel-open');
+  }
+
+  toggle.addEventListener('click', function() {
+    if (toc.classList.contains('toc--open')) {
+      closeToc();
+    } else {
+      openToc();
+    }
+  });
+
+  if (overlay) {
+    overlay.addEventListener('click', closeToc);
+  }
+
+  var links = toc.querySelectorAll('a');
+  var headings = [];         // [{ link: <a>, el: <heading> }]
+
+  function headingId(href) {
+    if (!href || href.charAt(0) !== '#') return '';
+    try { return decodeURIComponent(href.substring(1)); }
+    catch (err) { return href.substring(1); }
+  }
+
+  function jumpToHeading(href) {
+    var id = headingId(href);
+    var el = id ? document.getElementById(id) : null;
+    if (!el) return false;
+    closeToc();
+    el.scrollIntoView({ behavior: 'auto', block: 'start' });
+    try { history.replaceState(null, '', '#' + id); } catch (err) {}
+    return true;
+  }
+
+  toc.addEventListener('click', function(e) {
+    var a = e.target.closest('a[href]');
+    if (!a || !toc.contains(a)) return;
+    if (jumpToHeading(a.getAttribute('href'))) e.preventDefault();
+  });
+
+  for (var i = 0; i < links.length; i++) {
+    var href = links[i].getAttribute('href');
+    var el = document.getElementById(headingId(href));
+    if (el) headings.push({ link: links[i], el: el });
+  }
+
+  if (headings.length === 0) return;
+
+  toc._activeLink = null;
+  toc._headingOffset = 64;
+
+  function setActive(current) {
+    if (current === toc._activeLink) return;
+    for (var k = 0; k < links.length; k++) {
+      links[k].classList.remove('toc__link--active');
+    }
+    if (current) {
+      current.classList.add('toc__link--active');
+      if (toc.scrollHeight > toc.clientHeight) {
+        var linkOffset = current.getBoundingClientRect().top
+                       - toc.getBoundingClientRect().top
+                       + toc.scrollTop;
+        var linkH = current.getBoundingClientRect().height;
+        var tocH = toc.clientHeight;
+        var margin = 16;
+        if (linkOffset < toc.scrollTop + margin) {
+          toc.scrollTop = linkOffset - margin;
+        } else if (linkOffset + linkH > toc.scrollTop + tocH - margin) {
+          toc.scrollTop = linkOffset + linkH - tocH + margin;
+        }
+      }
+    }
+    toc._activeLink = current;
+  }
+
+  function fallbackActive() {
+    var current = null;
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.getBoundingClientRect().top <= toc._headingOffset) {
+        current = headings[j].link;
+      }
+    }
+    if (!current) {
+      var atBottom = window.innerHeight + window.scrollY >=
+                      document.documentElement.scrollHeight - 80;
+      if (atBottom) current = headings[headings.length - 1].link;
+    }
+    setActive(current);
+  }
+
+  if (typeof IntersectionObserver === "function") {
+    var visible = [];
+    var io = new IntersectionObserver(function (entries) {
+      for (var i = 0; i < entries.length; i++) {
+        var entry = entries[i];
+        for (var j = 0; j < headings.length; j++) {
+          if (headings[j].el === entry.target) {
+            visible[j] = entry.isIntersecting;
+            break;
+          }
+        }
+      }
+      var current = null;
+      for (var j = 0; j < headings.length; j++) {
+        if (visible[j]) { current = headings[j].link; break; }
+      }
+      if (!current) fallbackActive();
+      else setActive(current);
+    }, { rootMargin: "-64px 0px -65% 0px", threshold: 0 });
+    for (var i = 0; i < headings.length; i++) io.observe(headings[i].el);
+  } else {
+    toc._pending = false;
+    window.addEventListener("scroll", function () {
+      if (toc._pending) return;
+      toc._pending = true;
+      requestAnimationFrame(function () {
+        fallbackActive();
+        toc._pending = false;
+      });
+    });
+    fallbackActive();
+  }
+})();
+</script>
+{{ end }}
+{{ end }}
