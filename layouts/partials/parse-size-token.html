@@ -1,0 +1,36 @@
+{{- $raw := lower (strings.TrimSpace (printf "%s" .)) -}}
+{{- $width := "" -}}
+{{- $height := "" -}}
+{{- $setW := false -}}
+{{- $setH := false -}}
+{{- $ok := false -}}
+{{- if $raw -}}
+  {{- $both := findRESubmatch `^(\d+(?:\.\d+)?)(px|cm|mm|inch|in|%)?x(\d+(?:\.\d+)?)(px|cm|mm|inch|in|%)?$` $raw 1 -}}
+  {{- $onlyW := findRESubmatch `^(\d+(?:\.\d+)?)(px|cm|mm|inch|in|%)?x$` $raw 1 -}}
+  {{- $onlyH := findRESubmatch `^x(\d+(?:\.\d+)?)(px|cm|mm|inch|in|%)?$` $raw 1 -}}
+  {{- $single := findRESubmatch `^(\d+(?:\.\d+)?)(px|cm|mm|inch|in|%)?$` $raw 1 -}}
+  {{- if $both -}}
+    {{- $g := index $both 0 -}}
+    {{- $ok = true -}}
+    {{- $setW = true -}}
+    {{- $setH = true -}}
+    {{- $width = partial "image-css-length.html" (dict "n" (index $g 1) "u" (index $g 2)) -}}
+    {{- $height = partial "image-css-length.html" (dict "n" (index $g 3) "u" (index $g 4)) -}}
+  {{- else if $onlyW -}}
+    {{- $g := index $onlyW 0 -}}
+    {{- $ok = true -}}
+    {{- $setW = true -}}
+    {{- $width = partial "image-css-length.html" (dict "n" (index $g 1) "u" (index $g 2)) -}}
+  {{- else if $onlyH -}}
+    {{- $g := index $onlyH 0 -}}
+    {{- $ok = true -}}
+    {{- $setH = true -}}
+    {{- $height = partial "image-css-length.html" (dict "n" (index $g 1) "u" (index $g 2)) -}}
+  {{- else if $single -}}
+    {{- $g := index $single 0 -}}
+    {{- $ok = true -}}
+    {{- $setW = true -}}
+    {{- $width = partial "image-css-length.html" (dict "n" (index $g 1) "u" (index $g 2)) -}}
+  {{- end -}}
+{{- end -}}
+{{- return dict "ok" $ok "width" $width "height" $height "setW" $setW "setH" $setH -}}

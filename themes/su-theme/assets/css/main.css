@@ -61,7 +61,7 @@
   --t-fast: 0.15s var(--ease);
   --t-base: 0.2s var(--ease);
   --t-slow: 0.3s var(--ease);
-  --font-sans: "Noto Sans SC", "Source Han Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Zhuque Fangsong", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Source Code Pro", "SF Mono", Menlo, monospace;
   --article-width: 850px;
   --toc-width: 220px;
@@ -1003,6 +1003,19 @@ main { view-transition-name: site-main; }
   display: block;
   margin: 1.5em auto;
   border-radius: 6px;
+  height: auto;
+}
+.article__content .blog-post__image--left {
+  margin-left: 0;
+  margin-right: auto;
+}
+.article__content .blog-post__image--right {
+  margin-left: auto;
+  margin-right: 0;
+}
+.article__content .blog-post__image--center {
+  margin-left: auto;
+  margin-right: auto;
 }
 .article__content .blog-post__image[data-fullsrc] { cursor: zoom-in; }
 

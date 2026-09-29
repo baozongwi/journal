@@ -1,0 +1,62 @@
+{{- $attrs := printf "%s" . -}}
+{{- $tokens := slice -}}
+{{- $classVal := "" -}}
+{{- $idVal := "" -}}
+{{- $padded := printf " %s" $attrs -}}
+{{- $cm := findRESubmatch `(?i)(?:^|[\s,])class\s*=\s*"([^"]*)"` $padded 1 -}}
+{{- if not $cm -}}
+  {{- $cm = findRESubmatch `(?i)(?:^|[\s,])class\s*=\s*'([^']*)'` $padded 1 -}}
+{{- end -}}
+{{- if $cm -}}
+  {{- $classVal = index (index $cm 0) 1 -}}
+{{- end -}}
+{{- $im := findRESubmatch `(?i)(?:^|[\s,])id\s*=\s*"([^"]*)"` $padded 1 -}}
+{{- if not $im -}}
+  {{- $im = findRESubmatch `(?i)(?:^|[\s,])id\s*=\s*'([^']*)'` $padded 1 -}}
+{{- end -}}
+{{- if $im -}}
+  {{- $idVal = index (index $im 0) 1 -}}
+{{- end -}}
+{{- range split $classVal " " -}}
+  {{- $tok := strings.TrimSpace . -}}
+  {{- if $tok -}}
+    {{- $name := partial "image-align-name.html" $tok -}}
+    {{- if $name -}}
+      {{- $tokens = $tokens | append $name -}}
+    {{- else -}}
+      {{- $tokens = $tokens | append (printf ".%s" $tok) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if $idVal -}}
+  {{- $tokens = $tokens | append (printf "#%s" $idVal) -}}
+{{- end -}}
+{{- range findRESubmatch `(?:^|[\s,{])\.([A-Za-z0-9_-]+)` $padded -}}
+  {{- $cname := index . 1 -}}
+  {{- $name := partial "image-align-name.html" $cname -}}
+  {{- if $name -}}
+    {{- $tokens = $tokens | append $name -}}
+  {{- else -}}
+    {{- $tokens = $tokens | append (printf ".%s" $cname) -}}
+  {{- end -}}
+{{- end -}}
+{{- range findRESubmatch `(?:^|[\s,{])#([A-Za-z0-9_-]+)` $padded -}}
+  {{- $hid := index . 1 -}}
+  {{- if and $hid (ne $hid $idVal) -}}
+    {{- $tokens = $tokens | append (printf "#%s" $hid) -}}
+  {{- end -}}
+{{- end -}}
+{{- range findRESubmatch `(?i)(?:^|[\s,])(width|height|align)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s,"'}]+))` $padded -}}
+  {{- $key := lower (index . 1) -}}
+  {{- $val := or (index . 2) (or (index . 3) (index . 4)) -}}
+  {{- $val = strings.TrimSpace (printf "%s" $val) -}}
+  {{- if eq $key "height" -}}
+    {{- if not (in (lower $val) "x") -}}
+      {{- $val = printf "x%s" $val -}}
+    {{- end -}}
+    {{- $tokens = $tokens | append $val -}}
+  {{- else if $val -}}
+    {{- $tokens = $tokens | append $val -}}
+  {{- end -}}
+{{- end -}}
+{{- return delimit $tokens "|" -}}

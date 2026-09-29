@@ -1,18 +1,25 @@
 {{- $page := or .PageInner .Page -}}
-{{- $dst := .Destination -}}
+{{- $attrs := dict -}}
+{{- with .Attributes }}{{ $attrs = . }}{{ end -}}
+{{- $parsed := partial "parse-image-style.html" (dict "alt" .PlainText "dest" .Destination "title" (.Title | default "") "attrs" $attrs) -}}
+{{- $dst := $parsed.dest -}}
 {{- $ext := path.Ext $dst | strings.ToLower -}}
 {{- $img := "" -}}
 {{- $full := "" -}}
 {{- $srcset := "" -}}
 {{- $ow := 0 -}}
 {{- $oh := 0 -}}
-{{- $alt := strings.TrimSpace .PlainText | strings.ToLower -}}
-{{- $ranking := or (in $alt "排名") (eq $alt "rank") (in $alt "ranking") (in $alt "scoreboard") (in $alt "leaderboard") -}}
+{{- $altKey := strings.TrimSpace $parsed.alt | strings.ToLower -}}
+{{- $ranking := or (in $altKey "排名") (eq $altKey "rank") (in $altKey "ranking") (in $altKey "scoreboard") (in $altKey "leaderboard") -}}
 {{- with $page.Params.rankingImage -}}
   {{- $want := strings.TrimSpace (printf "%s" .) -}}
   {{- if and $want (eq (strings.ToLower (path.Base $dst)) (strings.ToLower (path.Base $want))) -}}
     {{- $ranking = true -}}
   {{- end -}}
+{{- end -}}
+{{- $reqPx := 0 -}}
+{{- if strings.HasSuffix $parsed.width "px" -}}
+  {{- $reqPx = int (float (strings.TrimSuffix "px" $parsed.width)) -}}
 {{- end -}}
 {{- $eager := eq .Ordinal 0 -}}
 {{- $skipProcess := or
@@ -32,6 +39,10 @@
   {{- with $res -}}
     {{- $ow = .Width -}}
     {{- $oh = .Height -}}
+    {{- if and (eq $reqPx 0) (strings.HasSuffix $parsed.height "px") (gt $ow 0) (gt $oh 0) -}}
+      {{- $hp := float (strings.TrimSuffix "px" $parsed.height) -}}
+      {{- $reqPx = int (math.Round (div (mul $hp (float $ow)) (float $oh))) -}}
+    {{- end -}}
     {{- if $ranking -}}
       {{- $a := partial "process-image.html" (dict "image" . "width" $ow "q" 100) -}}
       {{- $img = $a -}}
@@ -40,6 +51,10 @@
       {{- $displayW := 900 -}}
       {{- $fullW := 1600 -}}
       {{- $q := 80 -}}
+      {{- if gt $reqPx 0 -}}
+        {{- $displayW = mul $reqPx 2 -}}
+        {{- if or (gt $displayW $ow) (le $displayW 0) }}{{ $displayW = $ow }}{{ end -}}
+      {{- end -}}
       {{- if gt $ow $fullW -}}
         {{- $a1 := partial "process-image.html" (dict "image" . "width" $displayW "q" $q) -}}
         {{- $a2 := partial "process-image.html" (dict "image" . "width" $fullW "q" $q) -}}
@@ -67,15 +82,47 @@
     {{- $full = $src -}}
   {{- end -}}
 {{- end -}}
+{{- $sizes := "(max-width: 900px) calc(100vw - 32px), 850px" -}}
+{{- if gt $reqPx 0 -}}
+  {{- $sizes = printf "min(%dpx, calc(100vw - 32px))" $reqPx -}}
+{{- end -}}
+{{- $style := slice -}}
+{{- with $parsed.width }}{{ $style = $style | append (printf "width:%s" .) }}{{ end -}}
+{{- if and $parsed.width $parsed.height -}}
+  {{- $aw := replaceRE `(?i)(px|cm|mm|in|%)$` "" $parsed.width -}}
+  {{- $ah := replaceRE `(?i)(px|cm|mm|in|%)$` "" $parsed.height -}}
+  {{- $style = $style | append (printf "aspect-ratio:%s/%s" $aw $ah) -}}
+{{- else -}}
+  {{- with $parsed.height }}{{ $style = $style | append (printf "height:%s" .) }}{{ end -}}
+  {{- if and $parsed.height (not $parsed.width) }}{{ $style = $style | append "width:auto" }}{{ end -}}
+{{- end -}}
+{{- $styleAttr := delimit $style ";" -}}
+{{- with $parsed.style -}}
+  {{- $extra := . | safeCSS -}}
+  {{- if $extra -}}
+    {{- if $styleAttr -}}
+      {{- $styleAttr = printf "%s;%s" $styleAttr $extra -}}
+    {{- else -}}
+      {{- $styleAttr = printf "%s" $extra -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $class := "blog-post__image" -}}
+{{- with $parsed.align }}{{ $class = printf "%s blog-post__image--%s" $class . }}{{ end -}}
+{{- with $parsed.class }}{{ $class = printf "%s %s" $class . }}{{ end -}}
+{{- $loading := cond $eager "eager" "lazy" -}}
+{{- if in (slice "lazy" "eager" "auto") $parsed.loading }}{{ $loading = $parsed.loading }}{{ end -}}
 <img
-  class="blog-post__image"
+  class="{{ $class }}"
   src="{{ if $img }}{{ $img.RelPermalink }}{{ else }}{{ $src }}{{ end }}"
-  {{- if $srcset }} srcset="{{ $srcset }}" sizes="(max-width: 900px) calc(100vw - 32px), 850px"{{ end }}
+  {{- if $srcset }} srcset="{{ $srcset }}" sizes="{{ $sizes }}"{{ end }}
   {{- if $ow }} width="{{ $ow }}" height="{{ $oh }}"{{ end }}
   {{- if $full }} data-fullsrc="{{ $full }}"{{ end }}
-  alt="{{ .PlainText }}"
-  {{- with .Title }} title="{{ . }}"{{- end }}
-  loading="{{ if $eager }}eager{{ else }}lazy{{ end }}"
-  {{- if $eager }} fetchpriority="high"{{ end }}
+  alt="{{ $parsed.alt }}"
+  {{- with $parsed.title }} title="{{ . }}"{{ end }}
+  {{- with $parsed.id }} id="{{ . }}"{{ end }}
+  {{- with $styleAttr }} style="{{ . | safeCSS }}"{{ end }}
+  loading="{{ $loading }}"
+  {{- if eq $loading "eager" }} fetchpriority="high"{{ end }}
   decoding="async"
 >

@@ -1,0 +1,71 @@
+{{- $text := printf "%s" (.text | default "") -}}
+{{- $width := .width -}}
+{{- $height := .height -}}
+{{- $align := .align -}}
+{{- $id := .id -}}
+{{- $classes := .classes | default slice -}}
+{{- $bare := .bare | default false -}}
+{{- $eqRe := "" -}}
+{{- if $bare -}}
+  {{- $eqRe = `(?i)(\.(?:png|jpe?g|gif|webp|svg|avif))\s*=\s*(\d+(?:\.\d+)?(?:px|cm|mm|inch|in|%)?(?:x(?:\d+(?:\.\d+)?(?:px|cm|mm|inch|in|%)?)?)?|x\d+(?:\.\d+)?(?:px|cm|mm|inch|in|%)?)\s*$` -}}
+{{- else -}}
+  {{- $eqRe = `(?i)(?:^|\s)=\s*(\d+(?:\.\d+)?(?:px|cm|mm|inch|in|%)(?:x(?:\d+(?:\.\d+)?(?:px|cm|mm|inch|in|%)?)?)?|\d+(?:\.\d+)?x(?:\d+(?:\.\d+)?(?:px|cm|mm|inch|in|%)?)?|x\d+(?:\.\d+)?(?:px|cm|mm|inch|in|%)?)\s*$` -}}
+{{- end -}}
+{{- $eq := findRESubmatch $eqRe $text 1 -}}
+{{- if $eq -}}
+  {{- $g := index $eq 0 -}}
+  {{- $tok := index $g (sub (len $g) 1) -}}
+  {{- $styled := partial "consume-image-token.html" (dict "token" $tok "width" $width "height" $height "align" $align "id" $id "classes" $classes) -}}
+  {{- if $styled.ok -}}
+    {{- $width = $styled.width -}}
+    {{- $height = $styled.height -}}
+    {{- $align = $styled.align -}}
+    {{- $id = $styled.id -}}
+    {{- $classes = $styled.classes -}}
+    {{- $text = replaceRE $eqRe "" $text -}}
+    {{- if $bare -}}
+      {{- $text = printf "%s%s" $text (index $g 1) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $parts := split $text "|" -}}
+{{- $n := len $parts -}}
+{{- if gt $n 1 -}}
+  {{- $idxs := slice -}}
+  {{- $open := true -}}
+  {{- range $i := seq (sub $n 1) 1 -}}
+    {{- if $open -}}
+      {{- $seg := strings.TrimSpace (index $parts $i) -}}
+      {{- if eq $seg "" -}}
+        {{- $idxs = $idxs | append $i -}}
+      {{- else -}}
+        {{- $probe := partial "consume-image-token.html" (dict "token" $seg "width" "" "height" "" "align" "" "id" "" "classes" slice) -}}
+        {{- if $probe.ok -}}
+          {{- $idxs = $idxs | append $i -}}
+        {{- else -}}
+          {{- $open = false -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $m := len $idxs -}}
+  {{- if gt $m 0 -}}
+    {{- range $k := seq (sub $m 1) 0 -}}
+      {{- $i := index $idxs $k -}}
+      {{- $seg := strings.TrimSpace (index $parts $i) -}}
+      {{- if $seg -}}
+        {{- $styled := partial "consume-image-token.html" (dict "token" $seg "width" $width "height" $height "align" $align "id" $id "classes" $classes) -}}
+        {{- if $styled.ok -}}
+          {{- $width = $styled.width -}}
+          {{- $height = $styled.height -}}
+          {{- $align = $styled.align -}}
+          {{- $id = $styled.id -}}
+          {{- $classes = $styled.classes -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $left := index $idxs (sub $m 1) -}}
+    {{- $text = delimit (first $left $parts) "|" -}}
+  {{- end -}}
+{{- end -}}
+{{- return dict "text" $text "width" $width "height" $height "align" $align "id" $id "classes" $classes -}}

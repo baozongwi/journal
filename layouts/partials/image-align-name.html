@@ -1,0 +1,10 @@
+{{- $t := lower (strings.TrimSpace (printf "%s" .)) -}}
+{{- $out := "" -}}
+{{- if or (eq $t "left") (eq $t "居左") (eq $t "左对齐") -}}
+  {{- $out = "left" -}}
+{{- else if or (eq $t "right") (eq $t "居右") (eq $t "右对齐") -}}
+  {{- $out = "right" -}}
+{{- else if or (eq $t "center") (eq $t "centre") (eq $t "居中") (eq $t "居中对齐") -}}
+  {{- $out = "center" -}}
+{{- end -}}
+{{- return $out -}}

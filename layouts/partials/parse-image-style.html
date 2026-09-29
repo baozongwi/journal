@@ -1,0 +1,88 @@
+{{- /*
+  Sizes and alignment written the way common editors do:
+  Obsidian ![alt|320](url), ![alt|320x180](url), ![alt|x180](url), ![alt|50%](url), ![alt|left](url)
+  destination ![alt](url|320) and markdown-it ![alt](url =320x180) / ![alt](url.png=320x)
+  alt form ![alt =320x](url)
+  fragment ![alt](url#left)
+  Pandoc attributes {width=320 height=180 .left} and wikilinks ![[url|320]]
+*/ -}}
+{{- $width := "" -}}
+{{- $height := "" -}}
+{{- $align := "" -}}
+{{- $id := "" -}}
+{{- $classes := slice -}}
+{{- $style := "" -}}
+{{- $loading := "" -}}
+{{- $title := printf "%s" (.title | default "") -}}
+{{- $apply := dict "text" (.dest | default "") "bare" true "width" $width "height" $height "align" $align "id" $id "classes" $classes -}}
+{{- $apply = partial "strip-image-decorators.html" $apply -}}
+{{- $apply = partial "strip-image-decorators.html" (dict "text" $apply.text "bare" true "width" $apply.width "height" $apply.height "align" $apply.align "id" $apply.id "classes" $apply.classes) -}}
+{{- $dest := $apply.text -}}
+{{- $width = $apply.width -}}
+{{- $height = $apply.height -}}
+{{- $align = $apply.align -}}
+{{- $id = $apply.id -}}
+{{- $classes = $apply.classes -}}
+{{- $frag := findRESubmatch `(?i)#(left|right|center|centre)$` $dest 1 -}}
+{{- if $frag -}}
+  {{- $name := partial "image-align-name.html" (index (index $frag 0) 1) -}}
+  {{- if $name -}}
+    {{- $align = $name -}}
+    {{- $dest = replaceRE `(?i)#(left|right|center|centre)$` "" $dest -}}
+  {{- end -}}
+{{- end -}}
+{{- $apply = partial "strip-image-decorators.html" (dict "text" (.alt | default "") "bare" false "width" $width "height" $height "align" $align "id" $id "classes" $classes) -}}
+{{- $apply = partial "strip-image-decorators.html" (dict "text" $apply.text "bare" false "width" $apply.width "height" $apply.height "align" $apply.align "id" $apply.id "classes" $apply.classes) -}}
+{{- $alt := $apply.text -}}
+{{- $width = $apply.width -}}
+{{- $height = $apply.height -}}
+{{- $align = $apply.align -}}
+{{- $id = $apply.id -}}
+{{- $classes = $apply.classes -}}
+{{- with .attrs -}}
+  {{- if isset . "width" -}}
+    {{- $sz := partial "parse-size-token.html" (index . "width") -}}
+    {{- if $sz.ok -}}
+      {{- if $sz.setW }}{{ $width = $sz.width }}{{ end -}}
+      {{- if $sz.setH }}{{ $height = $sz.height }}{{ end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if isset . "height" -}}
+    {{- $sz := partial "parse-size-token.html" (index . "height") -}}
+    {{- if $sz.ok -}}
+      {{- if $sz.setH -}}
+        {{- $height = $sz.height -}}
+      {{- else if $sz.setW -}}
+        {{- $height = $sz.width -}}
+      {{- end -}}
+      {{- if and $sz.setW $sz.setH -}}
+        {{- $width = $sz.width -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if isset . "align" -}}
+    {{- $name := partial "image-align-name.html" (index . "align") -}}
+    {{- if $name }}{{ $align = $name }}{{ end -}}
+  {{- end -}}
+  {{- if isset . "class" -}}
+    {{- range split (printf "%s" (index . "class")) " " -}}
+      {{- $tok := strings.TrimSpace . -}}
+      {{- $name := partial "image-align-name.html" $tok -}}
+      {{- if $name -}}
+        {{- $align = $name -}}
+      {{- else if $tok -}}
+        {{- $classes = $classes | append $tok -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if isset . "id" -}}
+    {{- $id = printf "%s" (index . "id") -}}
+  {{- end -}}
+  {{- if isset . "style" -}}
+    {{- $style = printf "%s" (index . "style") -}}
+  {{- end -}}
+  {{- if isset . "loading" -}}
+    {{- $loading = lower (printf "%s" (index . "loading")) -}}
+  {{- end -}}
+{{- end -}}
+{{- return dict "alt" (strings.TrimSpace $alt) "dest" (strings.TrimSpace $dest) "title" $title "width" $width "height" $height "align" $align "id" $id "class" (delimit $classes " ") "style" $style "loading" $loading -}}

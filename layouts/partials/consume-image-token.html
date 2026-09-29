@@ -1,0 +1,50 @@
+{{- $token := strings.TrimSpace (printf "%s" .token) -}}
+{{- $width := .width -}}
+{{- $height := .height -}}
+{{- $align := .align -}}
+{{- $id := .id -}}
+{{- $classes := .classes | default slice -}}
+{{- $ok := false -}}
+{{- $alignName := partial "image-align-name.html" $token -}}
+{{- if not $token -}}
+{{- else if $alignName -}}
+  {{- $ok = true -}}
+  {{- $align = $alignName -}}
+{{- else if and (strings.HasPrefix $token "#") (gt (len $token) 1) -}}
+  {{- $ok = true -}}
+  {{- $id = strings.TrimPrefix "#" $token -}}
+{{- else if and (strings.HasPrefix $token ".") (gt (len $token) 1) -}}
+  {{- $ok = true -}}
+  {{- $classes = $classes | append (strings.TrimPrefix "." $token) -}}
+{{- else -}}
+  {{- $kv := findRESubmatch `^(?i)(w|width|h|height)\s*[:=]\s*(.+)$` $token 1 -}}
+  {{- if $kv -}}
+    {{- $g := index $kv 0 -}}
+    {{- $key := lower (index $g 1) -}}
+    {{- $sz := partial "parse-size-token.html" (index $g 2) -}}
+    {{- if $sz.ok -}}
+      {{- $ok = true -}}
+      {{- if or (eq $key "h") (eq $key "height") -}}
+        {{- if $sz.setH -}}
+          {{- $height = $sz.height -}}
+        {{- else -}}
+          {{- $height = $sz.width -}}
+        {{- end -}}
+        {{- if and $sz.setW $sz.setH -}}
+          {{- $width = $sz.width -}}
+        {{- end -}}
+      {{- else -}}
+        {{- if $sz.setW -}}{{- $width = $sz.width -}}{{- end -}}
+        {{- if $sz.setH -}}{{- $height = $sz.height -}}{{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- else -}}
+    {{- $sz := partial "parse-size-token.html" $token -}}
+    {{- if $sz.ok -}}
+      {{- $ok = true -}}
+      {{- if $sz.setW -}}{{- $width = $sz.width -}}{{- end -}}
+      {{- if $sz.setH -}}{{- $height = $sz.height -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return dict "ok" $ok "width" $width "height" $height "align" $align "id" $id "classes" $classes -}}

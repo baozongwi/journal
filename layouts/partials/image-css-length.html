@@ -1,0 +1,17 @@
+{{- $n := "" -}}
+{{- $u := "" -}}
+{{- with .n }}{{ $n = printf "%s" . }}{{ end -}}
+{{- with .u }}{{ $u = lower (printf "%s" .) }}{{ end -}}
+{{- $out := "" -}}
+{{- if $n -}}
+  {{- $f := float $n -}}
+  {{- if ne $f 0.0 -}}
+    {{- if or (eq $u "") (eq $u "px") -}}
+      {{- $u = "px" -}}
+    {{- else if eq $u "inch" -}}
+      {{- $u = "in" -}}
+    {{- end -}}
+    {{- $out = printf "%s%s" $n $u -}}
+  {{- end -}}
+{{- end -}}
+{{- return $out -}}

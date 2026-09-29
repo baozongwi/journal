@@ -79,20 +79,14 @@
   {{- end }}
 {{- end }}
 
-{{- /* 思源黑体：只用站点实际出现过的 unicode 切片 + latin */ -}}
-{{- if .Site.Params.selfHosted }}
-<link rel="preload" as="font" type="font/woff2" href="{{ "fonts/noto-sans-sc/files/noto-sans-sc-latin-400-normal.woff2" | relURL }}" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="{{ "fonts/noto-sans-sc/files/noto-sans-sc-117-400-normal.woff2" | relURL }}" crossorigin>
-  {{- $fontCss := resources.Get "s/fonts/noto-sans-sc/site.css" | default (resources.Get "s/fonts/noto-sans-sc/400.css") -}}
-  {{- with $fontCss -}}
-    {{- $sheet := . | minify | fingerprint -}}
-<link rel="preload" as="style" href="{{ $sheet.RelPermalink }}" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="{{ $sheet.RelPermalink }}"></noscript>
-  {{- end }}
-{{- else }}
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc/400.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc/700.css">
+{{- /* 朱雀仿宋子集在 static/fonts/zhuque，随站点由 GitHub Pages 发出。 */ -}}
+{{- if fileExists "static/fonts/zhuque/result.css" -}}
+  {{- $base := "fonts/zhuque/" | relURL -}}
+  {{- if not (strings.HasSuffix $base "/") }}{{ $base = printf "%s/" $base }}{{ end -}}
+  {{- $raw := replace (readFile "static/fonts/zhuque/result.css") `url("./` (printf `url("%s` $base) -}}
+  {{- $match := index (findRESubmatch `url\("([^"]+)"\)` $raw) 0 -}}
+<link rel="preload" href="{{ index $match 1 }}" as="font" type="font/woff2" crossorigin>
+<style>{{ $raw | safeCSS }}</style>
 {{- end }}
 
 {{ $css := resources.Get "css/main.css" }}

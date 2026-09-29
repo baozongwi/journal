@@ -1,3 +1,5 @@
-{{- $content := partial "fix-email-autolinks.html" .Content -}}
+{{- $raw := partial "normalize-obsidian-images.html" .RawContent -}}
+{{- $content := $raw | .RenderString -}}
+{{- $content = partial "fix-email-autolinks.html" $content -}}
 {{- $content = partial "rewrite-html-images.html" (dict "page" . "content" $content) -}}
 {{- return $content -}}

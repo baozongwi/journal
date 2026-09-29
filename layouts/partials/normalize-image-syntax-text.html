@@ -1,0 +1,105 @@
+{{- $s := printf "%s" . -}}
+{{- $wikis := findRE `!\[\[[^\[\]\n]+\]\]` $s -}}
+{{- range $wikis -}}
+  {{- $inner := strings.TrimSuffix "]]" (strings.TrimPrefix "![[" .) -}}
+  {{- $bits := split $inner "|" -}}
+  {{- $path := strings.TrimSpace (index $bits 0) -}}
+  {{- $base := replaceRE `[#?].*$` "" $path -}}
+  {{- $ext := lower (path.Ext $base) -}}
+  {{- if in (slice ".png" ".jpg" ".jpeg" ".gif" ".webp" ".svg" ".avif") $ext -}}
+    {{- $segs := after 1 $bits -}}
+    {{- $nseg := len $segs -}}
+    {{- $trail := 0 -}}
+    {{- if gt $nseg 0 -}}
+      {{- $open := true -}}
+      {{- range $i := seq (sub $nseg 1) 0 -}}
+        {{- if $open -}}
+          {{- $seg := strings.TrimSpace (index $segs $i) -}}
+          {{- $probe := partial "consume-image-token.html" (dict "token" $seg "width" "" "height" "" "align" "" "id" "" "classes" slice) -}}
+          {{- if or (eq $seg "") $probe.ok -}}
+            {{- $trail = add $trail 1 -}}
+          {{- else -}}
+            {{- $open = false -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $altN := sub $nseg $trail -}}
+    {{- $alt := "" -}}
+    {{- $suffix := "" -}}
+    {{- if gt $altN 0 -}}
+      {{- $alt = delimit (first $altN $segs) "|" -}}
+    {{- end -}}
+    {{- if gt $trail 0 -}}
+      {{- $suffix = delimit (last $trail $segs) "|" -}}
+    {{- end -}}
+    {{- $newAlt := $alt -}}
+    {{- if $suffix -}}
+      {{- if $alt -}}
+        {{- $newAlt = printf "%s|%s" $alt $suffix -}}
+      {{- else -}}
+        {{- $newAlt = printf "|%s" $suffix -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $wrapped := $path -}}
+    {{- if or (in $path " ") (in $path "(") -}}
+      {{- $wrapped = printf "<%s>" $path -}}
+    {{- end -}}
+    {{- $s = replace $s . (printf "![%s](%s)" $newAlt $wrapped) -}}
+  {{- end -}}
+{{- end -}}
+{{- $legacy := findRE `!\[[^\]]*\]\([^\s)\n]+\s+=\s*[^)\n]+\)` $s -}}
+{{- range $legacy -}}
+  {{- $sub := findRESubmatch `!\[([^\]]*)\]\(([^\s)]+)\s+=\s*([^\s)]+)((?:\s+"[^"]*")?)\)` . 1 -}}
+  {{- if $sub -}}
+    {{- $g := index $sub 0 -}}
+    {{- $probe := partial "consume-image-token.html" (dict "token" (index $g 3) "width" "" "height" "" "align" "" "id" "" "classes" slice) -}}
+    {{- if $probe.ok -}}
+      {{- $alt := index $g 1 -}}
+      {{- $newAlt := index $g 3 -}}
+      {{- if $alt -}}
+        {{- $newAlt = printf "%s|%s" $alt $newAlt -}}
+      {{- else -}}
+        {{- $newAlt = printf "|%s" $newAlt -}}
+      {{- end -}}
+      {{- $s = replace $s . (printf "![%s](%s%s)" $newAlt (index $g 2) (index $g 4)) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $below := findRE `(?m)^[ \t]*!\[[^\]]*\]\([^)\n]*\)[ \t]*\r?\n\{:?[ \t]*[^{}\n]*\}[ \t]*$` $s -}}
+{{- range $below -}}
+  {{- $sub := findRESubmatch `(?s)^[ \t]*!\[([^\]]*)\]\(([^)\n]*)\)[ \t]*\r?\n\{:?[ \t]*([^{}\n]*)\}[ \t]*$` . 1 -}}
+  {{- if $sub -}}
+    {{- $g := index $sub 0 -}}
+    {{- $suffix := partial "image-brace-tokens.html" (index $g 3) -}}
+    {{- if $suffix -}}
+      {{- $alt := index $g 1 -}}
+      {{- $newAlt := $suffix -}}
+      {{- if $alt -}}
+        {{- $newAlt = printf "%s|%s" $alt $suffix -}}
+      {{- else -}}
+        {{- $newAlt = printf "|%s" $suffix -}}
+      {{- end -}}
+      {{- $s = replace $s . (printf "![%s](%s)" $newAlt (index $g 2)) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $braces := findRE `!\[[^\]]*\]\([^)\n]*\)\{:?[^{}\n]*\}` $s -}}
+{{- range $braces -}}
+  {{- $sub := findRESubmatch `!\[([^\]]*)\]\(([^)\n]*)\)\{:?\s*([^{}\n]*)\}` . 1 -}}
+  {{- if $sub -}}
+    {{- $g := index $sub 0 -}}
+    {{- $suffix := partial "image-brace-tokens.html" (index $g 3) -}}
+    {{- if $suffix -}}
+      {{- $alt := index $g 1 -}}
+      {{- $newAlt := $suffix -}}
+      {{- if $alt -}}
+        {{- $newAlt = printf "%s|%s" $alt $suffix -}}
+      {{- else -}}
+        {{- $newAlt = printf "|%s" $suffix -}}
+      {{- end -}}
+      {{- $s = replace $s . (printf "![%s](%s)" $newAlt (index $g 2)) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $s -}}
